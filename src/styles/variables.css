@@ -1,0 +1,21 @@
+:root {
+  --deep-blue: #0a192f;
+  --navy-blue: #112240;
+  --dark-blue: #1d3557;
+  --primary-blue: #457b9d;
+
+  --teal: #4cc9f0;
+  --emerald: #2a9d8f;
+  --bright-green: #8ac926;
+
+  --light-gray: #f1faee;
+  --white: #ffffff;
+
+  --gradient-primary: linear-gradient(135deg, #0a192f 0%, #1d3557 50%, #457b9d 100%);
+  --gradient-secondary: linear-gradient(135deg, #4cc9f0 0%, #2a9d8f 100%);
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-light: 0 5px 15px rgba(76, 201, 240, 0.2);
+
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
