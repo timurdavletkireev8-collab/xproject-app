@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, FlatList } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 const referralsData = [
@@ -7,7 +6,7 @@ const referralsData = [
   { id: '2', name: 'Bob', reward: 10 },
 ];
 
-const Referrals = () => {
+export default function Referrals() {
   const { isDark } = useTheme();
   const [code, setCode] = useState('');
 
@@ -16,57 +15,45 @@ const Referrals = () => {
     setCode('');
   };
 
-  const renderItem = ({ item }) => (
-    <View style={[styles.item, { backgroundColor: isDark ? '#1e1e1e' : '#f2f2f2' }]}>
-      <Text style={{ color: isDark ? '#fff' : '#000' }}>{item.name}</Text>
-      <Text style={{ color: isDark ? '#fff' : '#000' }}>${item.reward}</Text>
-    </View>
-  );
-
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#fff' }]}>
-      <Text style={[styles.title, { color: isDark ? '#fff' : '#000' }]}>Referrals</Text>
-      <TextInput
+    <div style={{ backgroundColor: isDark ? '#121212' : '#fff', minHeight: '100vh', padding: 20 }}>
+      <h1 style={{ color: isDark ? '#fff' : '#000' }}>Referrals</h1>
+
+      <input
+        type="text"
         placeholder="Enter referral code"
-        placeholderTextColor={isDark ? '#aaa' : '#555'}
-        style={[styles.input, { color: isDark ? '#fff' : '#000', borderColor: isDark ? '#fff' : '#000' }]}
         value={code}
-        onChangeText={setCode}
+        onChange={e => setCode(e.target.value)}
+        style={{
+          padding: 10,
+          borderRadius: 10,
+          border: `1px solid ${isDark ? '#fff' : '#000'}`,
+          marginBottom: 10,
+          width: '100%',
+          color: isDark ? '#fff' : '#000',
+          backgroundColor: isDark ? '#1e1e1e' : '#fff'
+        }}
       />
-      <Button title="Invite" onPress={handleInvite} />
-      <FlatList
-        data={referralsData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        style={{ marginTop: 20 }}
-      />
-    </View>
+      <button onClick={handleInvite}>Invite</button>
+
+      <div style={{ marginTop: 20 }}>
+        {referralsData.map(item => (
+          <div
+            key={item.id}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: 15,
+              borderRadius: 10,
+              marginBottom: 10,
+              backgroundColor: isDark ? '#1e1e1e' : '#f2f2f2'
+            }}
+          >
+            <span style={{ color: isDark ? '#fff' : '#000' }}>{item.name}</span>
+            <span style={{ color: isDark ? '#fff' : '#000' }}>${item.reward}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10
-  },
-  item: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10
-  }
-});
-
-export default Referrals;
+}
