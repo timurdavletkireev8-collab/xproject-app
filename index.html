@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Project - Заработок коинов</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    <!-- Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Иконки Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-rocket"></i> X PROJECT
+            </div>
+            <div class="user-info" id="userInfo">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=loading" alt="Avatar" class="avatar" id="userAvatar">
+                <div class="username" id="username">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Energy Bar (фиксированная сверху) -->
+        <div class="energy-bar-container">
+            <div class="energy-info">
+                <span><i class="fas fa-bolt"></i> Энергия</span>
+                <span id="energyText">0/500</span>
+            </div>
+            <div class="energy-bar">
+                <div class="energy-fill" id="energyFill"></div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content" id="content">
+            <!-- Tasks Section -->
+            <div class="section active" id="tasksSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-wallet"></i> Ваш баланс
+                    </div>
+                    <div class="balance-amount" id="balanceAmount">0 X</div>
+                    <div class="balance-rub" id="balanceRub">≈ 0.00 ₽</div>
+                </div>
+
+                <div class="categories" id="taskCategories">
+                    <button class="category-btn active" data-category="all">Все</button>
+                    <button class="category-btn" data-category="cheap">Дешевые</button>
+                    <button class="category-btn" data-category="expensive">Дорогие</button>
+                    <button class="category-btn" data-category="subscriptions">Подписки</button>
+                    <button class="category-btn" data-category="bots">Боты</button>
+                    <button class="category-btn" data-category="registrations">Регистрации</button>
+                    <button class="category-btn" data-category="other">Другое</button>
+                </div>
+
+                <div class="tasks-list" id="tasksList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Загрузка заданий...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clicker Section -->
+            <div class="section" id="clickerSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-coins"></i> Кликер баланс
+                    </div>
+                    <div class="balance-amount" id="clickerBalance">0 X</div>
+                    <div class="balance-rub" id="clickerBalanceRub">≈ 0.00 ₽</div>
+                </div>
+
+                <div class="clicker-container">
+                    <div class="clicker-stats">
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-size: 14px; color: var(--teal);">Награда за клик</div>
+                            <div class="clicker-per-click" id="perClickAmount">1 X</div>
+                        </div>
+                    </div>
+
+                    <div class="clicker-main" id="clickerButton">
+                        <img src="https://i.postimg.cc/dVyYkscv/Picsart-26-02-05-06-19-13-622.png" alt="Кликер" class="clicker-image">
+                        <div class="click-particles" id="clickParticles"></div>
+                    </div>
+
+                    <div class="clicker-stats">
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Всего кликов</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--teal);" id="totalClicks">0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Кликов сегодня</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--bright-green);" id="dailyClicks">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referrals Section -->
+            <div class="section" id="referralsSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-users"></i> Реферальный баланс
+                    </div>
+                    <div class="balance-amount" id="referralBalance">0 X</div>
+                    <div class="balance-rub" id="referralBalanceRub">≈ 0.00 ₽</div>
+                </div>
+
+                <div class="referral-card">
+                    <div class="referral-title">
+                        <i class="fas fa-user-plus"></i> Приглашайте друзей
+                    </div>
+                    <div class="referral-description">
+                        Приглашай друзей и получай <strong id="referralReward">10</strong> X когда он выполнит свое первое задание!
+                    </div>
+                    <div class="referral-link">
+                        <div class="link-text" id="referralLink">Загрузка...</div>
+                        <button class="copy-btn" onclick="copyReferralLink()">
+                            <i class="fas fa-copy"></i> Копировать
+                        </button>
+                    </div>
+                    
+                    <div class="referral-stats">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Приглашено</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--teal);" id="referralsCount">0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Заработано</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--bright-green);" id="referralsEarned">0 X</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="referral-card">
+                    <div class="referral-title">
+                        <i class="fas fa-list"></i> Ваши рефералы
+                    </div>
+                    <div class="referrals-list" id="referralsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Загрузка рефералов...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="section" id="profileSection">
+                <div class="profile-header">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" class="profile-avatar" id="profileAvatar">
+                    <div class="profile-name" id="profileName">Загрузка...</div>
+                    <div class="profile-username" id="profileUsername">@username</div>
+                    <div class="profile-id" id="profileId">ID: 0</div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">Выполнено заданий</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalClicksStat">0</div>
+                        <div class="stat-label">Всего кликов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="referralsCountStat">0</div>
+                        <div class="stat-label">Рефералов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalEarned">0 X</div>
+                        <div class="stat-label">Всего заработано</div>
+                    </div>
+                </div>
+
+                <button class="btn" id="withdrawButton" onclick="checkWithdrawAvailability()">
+                    <i class="fas fa-credit-card"></i> Вывести средства
+                </button>
+                <div class="message info" id="withdrawMessage" style="display: none; margin-top: 10px;">
+                    <i class="fas fa-info-circle"></i> Выполните 5 заданий чтобы вывести
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="section" id="infoSection">
+                <div class="info-card" onclick="window.open('https://t.me/x_project_news', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-newspaper"></i> Новостной канал
+                    </div>
+                    <div class="info-description">
+                        Будьте в курсе всех обновлений и новостей проекта
+                    </div>
+                </div>
+                
+                <div class="info-card" onclick="window.open('https://t.me/x_project_support', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-headset"></i> Поддержка
+                    </div>
+                    <div class="info-description">
+                        Напишите нам, если возникли вопросы или проблемы
+                    </div>
+                </div>
+                
+                <div class="info-card" onclick="window.open('https://t.me/x_project_tg_bot', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-robot"></i> Наш бот
+                    </div>
+                    <div class="info-description">
+                        Основной бот проекта X Project
+                    </div>
+                </div>
+                
+                <!-- Admin Menu (visible only for admin) -->
+                <div class="info-card" id="adminMenuBtn" style="display: none;" onclick="showAdminMenu()">
+                    <div class="info-title">
+                        <i class="fas fa-cogs"></i> Админ меню
+                    </div>
+                    <div class="info-description">
+                        Панель управления администратора
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Section -->
+            <div class="section" id="adminSection" style="display: none;">
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-plus-circle"></i> Добавить задание
+                    </div>
+                    <form id="addTaskForm">
+                        <div class="form-group">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-input" id="taskName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-input" id="taskDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ссылка</label>
+                            <input type="url" class="form-input" id="taskLink" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Цена (X коинов)</label>
+                            <input type="number" class="form-input" id="taskPrice" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select" id="taskCategory">
+                                <option value="cheap">Дешевые</option>
+                                <option value="expensive">Дорогие</option>
+                                <option value="subscriptions">Подписки</option>
+                                <option value="bots">Боты</option>
+                                <option value="registrations">Регистрации</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Изображение</label>
+                            <input type="file" class="file-input" id="taskImageInput" accept="image/*" required>
+                            <div style="font-size: 12px; color: var(--teal); margin-top: 5px;">
+                                Выберите фото из галереи
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-plus"></i> Добавить задание
+                        </button>
+                    </form>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-sliders-h"></i> Настройки
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Награда за клик (X коинов)</label>
+                        <input type="number" class="form-input" id="clickReward" min="0.1" step="0.1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Награда за реферала (X коинов)</label>
+                        <input type="number" class="form-input" id="referralRewardInput" min="1" step="1" value="10">
+                    </div>
+                    <button class="btn btn-small" onclick="updateSettings()">
+                        <i class="fas fa-save"></i> Сохранить настройки
+                    </button>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-tasks"></i> Задания на проверке
+                    </div>
+                    <div class="admin-list" id="pendingTasksList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Загрузка...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-money-bill-wave"></i> Заявки на вывод
+                    </div>
+                    <div class="admin-list" id="withdrawRequestsList">
+                        <div class="empty-state">
+                            <i class="fas fa-wallet"></i>
+                            <div>Нет заявок на вывод</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-list-alt"></i> Все задачи
+                    </div>
+                    <div class="admin-list" id="allTasksList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Загрузка...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-title">
+                        <i class="fas fa-history"></i> История действий
+                    </div>
+                    <div class="admin-list" id="actionHistory">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <div>Нет действий</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-btn active" data-section="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Задания</span>
+            </button>
+            <button class="nav-btn" data-section="clicker">
+                <i class="fas fa-bolt"></i>
+                <span>Кликер</span>
+            </button>
+            <button class="nav-btn" data-section="referrals">
+                <i class="fas fa-users"></i>
+                <span>Рефералы</span>
+            </button>
+            <button class="nav-btn" data-section="profile">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+            <button class="nav-btn" data-section="info">
+                <i class="fas fa-info-circle"></i>
+                <span>Инфо</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="color: var(--white);">Выполнение задания</h3>
+                <button class="modal-close" onclick="closeTaskModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <img src="" alt="Task" class="modal-image" id="modalTaskImage">
+                <h3 class="modal-title" id="modalTaskTitle"></h3>
+                <div class="modal-description" id="modalTaskDescription"></div>
+                
+                <div id="taskModalStep1">
+                    <button class="btn" onclick="startTask()">
+                        <i class="fas fa-external-link-alt"></i> Перейти по ссылке
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeTaskModal()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+                
+                <div id="taskModalStep2" style="display: none;">
+                    <div class="message info">
+                        <i class="fas fa-info-circle"></i> Задание открыто в новой вкладке. После выполнения сделайте скриншот и загрузите его ниже
+                    </div>
+                    
+                    <div class="photo-upload">
+                        <label for="reportPhoto" class="upload-label">
+                            <i class="fas fa-camera"></i> Выбрать фото отчета
+                        </label>
+                        <input type="file" id="reportPhoto" accept="image/*" capture="environment">
+                        <img id="photoPreview" class="photo-preview" alt="Preview">
+                    </div>
+                    
+                    <button class="btn" onclick="submitTaskReport()" id="submitReportBtn">
+                        <i class="fas fa-paper-plane"></i> Отправить отчет
+                    </button>
+                    <button class="btn btn-secondary" onclick="backToStep1()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="color: var(--white);">Вывод средств</h3>
+                <button class="modal-close" onclick="closeWithdrawModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Сумма (X коинов)</label>
+                    <input type="number" class="form-input" id="withdrawAmount" min="5000" value="5000">
+                    <div style="font-size: 12px; color: var(--teal); margin-top: 5px;">
+                        Минимальная сумма: 5000 X (50 рублей)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Номер карты</label>
+                    <input type="text" class="form-input" id="withdrawCard" placeholder="0000 0000 0000 0000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Сумма в рублях</label>
+                    <div style="padding: 12px; background: rgba(29, 53, 87, 0.5); border-radius: 8px; color: var(--bright-green);">
+                        <span id="withdrawRubAmount">50</span> ₽
+                    </div>
+                </div>
+                <button class="btn" onclick="submitWithdrawRequest()">
+                    <i class="fas fa-paper-plane"></i> Отправить заявку
+                </button>
+                <button class="btn btn-secondary" onclick="closeWithdrawModal()">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Container -->
+    <div id="messageContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px;"></div>
+
+    <!-- Скрипты -->
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    
+    <script>
+        // Инициализация Service Worker для уведомлений
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
