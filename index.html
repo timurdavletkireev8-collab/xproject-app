@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Project - Заработок X коинов</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        /* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
+        :root {
+            --deep-blue: #0a192f;
+            --navy-blue: #112240;
+            --dark-blue: #1d3557;
+            --primary-blue: #457b9d;
+            --teal: #4cc9f0;
+            --emerald: #2a9d8f;
+            --bright-green: #8ac926;
+            --light-gray: #f1faee;
+            --white: #ffffff;
+            --gradient-primary: linear-gradient(135deg, #0a192f 0%, #1d3557 50%, #457b9d 100%);
+            --gradient-secondary: linear-gradient(135deg, #4cc9f0 0%, #2a9d8f 100%);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --shadow-light: 0 5px 15px rgba(76, 201, 240, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: var(--deep-blue);
+            color: var(--light-gray);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            overflow-x: hidden;
+        }
+
+        .app {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: var(--gradient-primary);
+            position: relative;
+        }
+
+        .app::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 30% 20%, rgba(76, 201, 240, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(42, 157, 143, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            background: rgba(10, 25, 47, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-secondary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--teal);
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .avatar:hover {
+            border-color: var(--bright-green);
+            transform: scale(1.05);
+        }
+
+        .username {
+            font-size: 14px;
+            color: var(--light-gray);
+            font-weight: 500;
+        }
+
+        /* ===== ПАНЕЛЬ ЭНЕРГИИ ===== */
+        .energy-bar-container {
+            background: rgba(17, 34, 64, 0.8);
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+        }
+
+        .energy-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .energy-bar {
+            height: 10px;
+            background: rgba(29, 53, 87, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: var(--gradient-secondary);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .energy-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* ===== КОНТЕНТ ===== */
+        .content {
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .balance-card {
+            background: rgba(17, 34, 64, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .balance-title {
+            font-size: 14px;
+            color: var(--teal);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 5px;
+        }
+
+        .balance-rub {
+            font-size: 14px;
+            color: var(--bright-green);
+        }
+
+        /* ===== КАТЕГОРИИ ===== */
+        .categories {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            padding: 8px 16px;
+            background: rgba(29, 53, 87, 0.5);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 20px;
+            color: var(--light-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .category-btn.active {
+            background: var(--gradient-secondary);
+            border-color: transparent;
+            box-shadow: var(--shadow-light);
+        }
+
+        .category-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--teal);
+        }
+
+        /* ===== СПИСОК ЗАДАНИЙ ===== */
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .task-card {
+            background: rgba(17, 34, 64, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .task-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--teal);
+            box-shadow: var(--shadow);
+        }
+
+        .task-header {
+            height: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .task-price {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--gradient-secondary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .task-content {
+            padding: 15px;
+        }
+
+        .task-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .task-description {
+            font-size: 14px;
+            color: var(--light-gray);
+            opacity: 0.8;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .task-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-completed {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .status-available {
+            background: rgba(76, 201, 240, 0.2);
+            color: var(--teal);
+        }
+
+        /* ===== КЛИКЕР ===== */
+        .clicker-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            gap: 30px;
+        }
+
+        .clicker-main {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .clicker-main:active {
+            transform: scale(0.95);
+        }
+
+        .clicker-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 20px rgba(76, 201, 240, 0.3));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .click-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .click-particle {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-image: url('https://i.postimg.cc/RCW45Qss/Picsart-26-02-05-06-24-12-003.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0;
+            animation: particleAnimation 1s ease-out forwards;
+        }
+
+        @keyframes particleAnimation {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) rotate(360deg) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .clicker-stats {
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ===== РЕФЕРАЛЫ ===== */
+        .referral-card {
+            background: rgba(17, 34, 64, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .referral-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .referral-description {
+            color: var(--light-gray);
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .referral-link {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(29, 53, 87, 0.5);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            align-items: center;
+        }
+
+        .link-text {
+            flex: 1;
+            word-break: break-all;
+            font-size: 14px;
+            color: var(--teal);
+        }
+
+        .copy-btn {
+            background: var(--gradient-secondary);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .referrals-list {
+            background: rgba(17, 34, 64, 0.5);
+            border-radius: 15px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .referral-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.1);
+        }
+
+        .referral-item:last-child {
+            border-bottom: none;
+        }
+
+        .referral-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .referral-info {
+            flex: 1;
+        }
+
+        .referral-name {
+            font-weight: 500;
+            color: var(--white);
+        }
+
+        .referral-id {
+            font-size: 12px;
+            color: var(--teal);
+        }
+
+        /* ===== ПРОФИЛЬ ===== */
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid var(--teal);
+            object-fit: cover;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 5px;
+        }
+
+        .profile-username {
+            color: var(--teal);
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .profile-id {
+            color: var(--light-gray);
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(17, 34, 64, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--teal);
+            transform: translateY(-3px);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--light-gray);
+            opacity: 0.8;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            background: var(--gradient-secondary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(29, 53, 87, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--teal);
+            background: rgba(29, 53, 87, 1);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== НАВИГАЦИЯ ===== */
+        .navigation {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(17, 34, 64, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(76, 201, 240, 0.2);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        .nav-btn i {
+            font-size: 20px;
+        }
+
+        .nav-btn.active {
+            background: var(--gradient-secondary);
+            color: var(--white);
+            box-shadow: var(--shadow-light);
+            transform: translateY(-5px);
+        }
+
+        .nav-btn:hover:not(.active) {
+            background: rgba(76, 201, 240, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* ===== ЗАГРУЗКА И СООБЩЕНИЯ ===== */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(76, 201, 240, 0.3);
+            border-top-color: var(--teal);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.active {
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            color: #28a745;
+        }
+
+        .message.error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+
+        .message.info {
+            background: rgba(76, 201, 240, 0.2);
+            border: 1px solid var(--teal);
+            color: var(--teal);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== МОДАЛЬНЫЕ ОКНА ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 25, 47, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--navy-blue);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--teal);
+            font-size: 24px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background: rgba(76, 201, 240, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 10px;
+        }
+
+        .modal-description {
+            color: var(--light-gray);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .photo-upload {
+            margin: 20px 0;
+        }
+
+        .upload-label {
+            display: inline-block;
+            background: rgba(29, 53, 87, 0.5);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: var(--teal);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 10px;
+        }
+
+        .upload-label:hover {
+            background: rgba(29, 53, 87, 0.8);
+            border-color: var(--teal);
+        }
+
+        #reportPhoto {
+            display: none;
+        }
+
+        .photo-preview {
+            margin-top: 15px;
+            max-width: 100%;
+            border-radius: 10px;
+            display: none;
+        }
+
+        /* ===== ПУСТОЕ СОСТОЯНИЕ ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--light-gray);
+            opacity: 0.7;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--teal);
+        }
+
+        /* ===== СКРОЛЛБАР ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(17, 34, 64, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--teal), var(--emerald));
+        }
+
+        /* ===== АНИМАЦИЯ НАГРАДЫ ЗА КЛИК ===== */
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(1.2);
+            }
+        }
+
+        .click-reward-animation {
+            position: absolute;
+            color: var(--bright-green);
+            font-weight: bold;
+            font-size: 18px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ===== АДАПТИВНОСТЬ ===== */
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px 15px;
+            }
+            
+            .content {
+                padding: 15px;
+                padding-bottom: 80px;
+            }
+            
+            .balance-card {
+                padding: 15px;
+            }
+            
+            .balance-amount {
+                font-size: 32px;
+            }
+            
+            .clicker-main {
+                width: 180px;
+                height: 180px;
+            }
+            
+            .modal-content {
+                margin: 10px;
+            }
+            
+            .profile-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Основное приложение -->
+    <div class="app" id="app">
+        <!-- Шапка -->
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-rocket"></i> X PROJECT
+            </div>
+            <div class="user-info" id="userInfo">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=loading" alt="Avatar" class="avatar" id="userAvatar">
+                <div class="username" id="username">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Панель энергии -->
+        <div class="energy-bar-container">
+            <div class="energy-info">
+                <span><i class="fas fa-bolt"></i> Энергия</span>
+                <span id="energyText">0/500</span>
+            </div>
+            <div class="energy-bar">
+                <div class="energy-fill" id="energyFill"></div>
+            </div>
+        </div>
+
+        <!-- Область контента -->
+        <div class="content" id="content">
+            <!-- РАЗДЕЛ: ЗАДАНИЯ -->
+            <div class="section active" id="tasksSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-wallet"></i> Ваш баланс
+                    </div>
+                    <div class="balance-amount" id="balanceAmount">0 X</div>
+                    <div class="balance-rub" id="balanceRub">~ 0.00 ₽</div>
+                </div>
+
+                <!-- Категории заданий -->
+                <div class="categories" id="taskCategories">
+                    <button class="category-btn active" data-category="all">Все</button>
+                    <button class="category-btn" data-category="cheap">Дешевые</button>
+                    <button class="category-btn" data-category="expensive">Дорогие</button>
+                    <button class="category-btn" data-category="subscriptions">Подписки</button>
+                    <button class="category-btn" data-category="bots">Боты</button>
+                    <button class="category-btn" data-category="registrations">Регистрации</button>
+                    <button class="category-btn" data-category="other">Другое</button>
+                </div>
+
+                <!-- Список заданий -->
+                <div class="tasks-list" id="tasksList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Загрузка заданий...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- РАЗДЕЛ: КЛИКЕР -->
+            <div class="section" id="clickerSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-coins"></i> Кликер баланс
+                    </div>
+                    <div class="balance-amount" id="clickerBalance">0 X</div>
+                    <div class="balance-rub" id="clickerBalanceRub">= 0.00 ₽</div>
+                </div>
+                <div class="clicker-container">
+                    <div class="clicker-stats">
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-size: 14px; color: var(--teal);">Награда за клик</div>
+                            <div class="clicker-per-click" id="perClickAmount">1 X</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Основное изображение кликера -->
+                    <div class="clicker-main" id="clickerButton">
+                        <img src="https://i.postimg.cc/dVyYkscv/Picsart-26-02-05-06-19-13-622.png" alt="Кликер" class="clicker-image">
+                        <div class="click-particles" id="clickParticles"></div>
+                    </div>
+                    
+                    <!-- Статистика кликов -->
+                    <div class="clicker-stats">
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Всего кликов</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--teal);" id="totalClicks">0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Кликов сегодня</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--bright-green);" id="dailyClicks">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- РАЗДЕЛ: РЕФЕРАЛЫ -->
+            <div class="section" id="referralsSection">
+                <div class="balance-card">
+                    <div class="balance-title">
+                        <i class="fas fa-users"></i> Реферальный баланс
+                    </div>
+                    <div class="balance-amount" id="referralBalance">0 X</div>
+                    <div class="balance-rub" id="referralBalanceRub">0.00 ₽</div>
+                </div>
+                
+                <!-- Реферальная карточка -->
+                <div class="referral-card">
+                    <div class="referral-title">
+                        <i class="fas fa-user-plus"></i> Приглашайте друзей
+                    </div>
+                    <div class="referral-description">
+                        Приглашай друзей и получай <strong id="referralReward">10</strong> X когда он выполнит свое первое задание!
+                    </div>
+                    <div class="referral-link">
+                        <div class="link-text" id="referralLink">Загрузка...</div>
+                        <button class="copy-btn" onclick="copyReferralLink()">
+                            <i class="fas fa-copy"></i> Копировать
+                        </button>
+                    </div>
+                    
+                    <!-- Статистика рефералов -->
+                    <div class="referral-stats">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Приглашено</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--teal);" id="referralsCount">0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--light-gray); opacity: 0.7;">Заработано</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--bright-green);" id="referralsEarned">0 X</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Список рефералов -->
+                <div class="referral-card">
+                    <div class="referral-title">
+                        <i class="fas fa-list"></i> Ваши рефералы
+                    </div>
+                    <div class="referrals-list" id="referralsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Загрузка рефералов...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- РАЗДЕЛ: ПРОФИЛЬ -->
+            <div class="section" id="profileSection">
+                <!-- Шапка профиля -->
+                <div class="profile-header">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" class="profile-avatar" id="profileAvatar">
+                    <div class="profile-name" id="profileName">Загрузка...</div>
+                    <div class="profile-username" id="profileUsername">@username</div>
+                    <div class="profile-id" id="profileId">ID: 0</div>
+                </div>
+
+                <!-- Статистика профиля -->
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">Выполнено заданий</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalClicksStat">0</div>
+                        <div class="stat-label">Всего кликов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="referralsCountStat">0</div>
+                        <div class="stat-label">Рефералов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalEarned">0 X</div>
+                        <div class="stat-label">Всего заработано</div>
+                    </div>
+                </div>
+
+                <!-- Кнопка вывода -->
+                <button class="btn" id="withdrawButton" onclick="checkWithdrawAvailability()">
+                    <i class="fas fa-credit-card"></i> Вывести средства
+                </button>
+                <div class="message info" id="withdrawMessage" style="display: none; margin-top: 10px;">
+                    <i class="fas fa-info-circle"></i> Выполните 5 заданий чтобы вывести
+                </div>
+            </div>
+
+            <!-- РАЗДЕЛ: ИНФОРМАЦИЯ -->
+            <div class="section" id="infoSection">
+                <!-- Новостной канал -->
+                <div class="info-card" onclick="window.open('https://t.me/x_project_news', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-newspaper"></i> Новостной канал
+                    </div>
+                    <div class="info-description">
+                        Будьте в курсе всех обновлений и новостей проекта
+                    </div>
+                </div>
+
+                <!-- Поддержка -->
+                <div class="info-card" onclick="window.open('https://t.me/x_project_support', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-headset"></i> Поддержка
+                    </div>
+                    <div class="info-description">
+                        Напишите нам, если возникли вопросы или проблемы
+                    </div>
+                </div>
+
+                <!-- Бот -->
+                <div class="info-card" onclick="window.open('https://t.me/x_project_tg_bot', '_blank')">
+                    <div class="info-title">
+                        <i class="fas fa-robot"></i> Наш бот
+                    </div>
+                    <div class="info-description">
+                        Основной бот проекта X Project
+                    </div>
+                </div>
+
+                <!-- Админ меню (только для админа) -->
+                <div class="info-card" id="adminMenuBtn" style="display: none;" onclick="showAdminMenu()">
+                    <div class="info-title">
+                        <i class="fas fa-cogs"></i> Админ меню
+                    </div>
+                    <div class="info-description">
+                        Панель управления администратора
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно задания -->
+        <div class="modal" id="taskModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="color: var(--white);">Выполнение задания</h3>
+                    <button class="modal-close" onclick="closeTaskModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <img src="" alt="Task" class="modal-image" id="modalTaskImage">
+                    <h3 class="modal-title" id="modalTaskTitle">Название задания</h3>
+                    <p class="modal-description" id="modalTaskDescription">Описание задания</p>
+                    
+                    <!-- Шаг 1: Переход по ссылке -->
+                    <div id="taskModalStep1">
+                        <button class="btn" onclick="startTask()">
+                            <i class="fas fa-external-link-alt"></i> Перейти по ссылке
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeTaskModal()">
+                            <i class="fas fa-arrow-left"></i> Назад
+                        </button>
+                    </div>
+
+                    <!-- Шаг 2: Отправка отчета -->
+                    <div id="taskModalStep2" style="display: none;">
+                        <div class="message info">
+                            <i class="fas fa-info-circle"></i> Задание открыто в новой вкладке. После выполнения сделайте скриншот и загрузите его ниже
+                        </div>
+                        <div class="photo-upload">
+                            <label for="reportPhoto" class="upload-label">
+                                <i class="fas fa-camera"></i> Выбрать фото отчета
+                            </label>
+                            <input type="file" id="reportPhoto" accept="image/*">
+                            <img id="photoPreview" class="photo-preview" alt="Preview">
+                        </div>
+                        <button class="btn" onclick="submitTaskReport()" id="submitReportBtn">
+                            <i class="fas fa-paper-plane"></i> Отправить отчет
+                        </button>
+                        <button class="btn btn-secondary" onclick="backToStep1()">
+                            <i class="fas fa-arrow-left"></i> Назад
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно вывода -->
+        <div class="modal" id="withdrawModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="color: var(--white);">Вывод средств</h3>
+                    <button class="modal-close" onclick="closeWithdrawModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Сумма (X коинов)</label>
+                        <input type="number" class="form-input" id="withdrawAmount" min="5000" value="5000">
+                        <div style="font-size: 12px; color: var(--teal); margin-top: 5px;">
+                            Минимальная сумма: 5000 X (50 рублей)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Номер карты</label>
+                        <input type="text" class="form-input" id="withdrawCard" placeholder="0000 0000 0000 0000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Сумма в рублях</label>
+                        <div style="padding: 12px; background: rgba(29, 53, 87, 0.5); border-radius: 8px; color: var(--bright-green);">
+                            <span id="withdrawRubAmount">50</span> ₽
+                        </div>
+                    </div>
+                    <button class="btn" onclick="submitWithdrawRequest()">
+                        <i class="fas fa-paper-plane"></i> Отправить заявку
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeWithdrawModal()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навигация -->
+        <div class="navigation">
+            <button class="nav-btn active" data-section="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Задания</span>
+            </button>
+            <button class="nav-btn" data-section="clicker">
+                <i class="fas fa-mouse-pointer"></i>
+                <span>Кликер</span>
+            </button>
+            <button class="nav-btn" data-section="referrals">
+                <i class="fas fa-users"></i>
+                <span>Рефералы</span>
+            </button>
+            <button class="nav-btn" data-section="profile">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+            <button class="nav-btn" data-section="info">
+                <i class="fas fa-info-circle"></i>
+                <span>Инфо</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Контейнер для сообщений -->
+    <div id="messageContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px;"></div>
+
+    <!-- Подключение дополнительных JS файлов -->
+    <script src="notifications.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="local-storage-backup.js"></script>
+    
+    <!-- Основной скрипт приложения -->
+    <script>
+        // ===== КОНФИГУРАЦИЯ =====
+        const APP_CONFIG = {
+            ADMIN_ID: "7020322752",
+            DAILY_ENERGY: 500,
+            MIN_WITHDRAW: 5000,
+            SUPPORT_LINK: "https://t.me/x_project_support",
+            NEWS_LINK: "https://t.me/x_project_news",
+            BOT_LINK: "https://t.me/x_project_tg_bot",
+            BOT_USERNAME: "@x_project_tg_bot",
+            FIREBASE_CONFIG: {
+                apiKey: "AIzaSyC6b6K3k6Mi9vF0ISyl8z2JY1DyCM-JbJA",
+                authDomain: "xproject-1c0ff.firebaseapp.com",
+                projectId: "xproject-1c0ff",
+                storageBucket: "xproject-1c0ff.firebasestorage.app",
+                messagingSenderId: "820697665436",
+                appId: "1:820697665436:web:4858de7ce757d9d9fd4259",
+                measurementId: "G-7B7KMC3XW9"
+            }
+        };
+
+        // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
+        let currentUser = null;
+        let userData = null;
+        let currentTask = null;
+        let tasks = [];
+        let clickReward = 1;
+        let referralReward = 10;
+        let reportPhoto = null;
+        let taskImageFile = null;
+        
+        // Telegram Web App
+        let tg = null;
+        if (window.telegram && window.telegram.WebApp) {
+            tg = window.telegram.WebApp;
+            tg.expand();
+            tg.enableClosingConfirmation();
+            tg.setHeaderColor('#0a192f');
+            tg.setBackgroundColor('#0a192f');
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ =====
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('X Project запущен');
+            
+            try {
+                // Показываем приветственное сообщение
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    showMessage(`Добро пожаловать, ${tg.initDataUnsafe.user.first_name}!`, 'success');
+                    initTelegramUser();
+                } else {
+                    initTestUser();
+                }
+
+                // Инициализация компонентов
+                initNavigation();
+                initTaskCategories();
+                initClicker();
+                initEventListeners();
+                
+                // Загрузка начальных данных
+                loadUserData();
+                updateEnergyUI();
+                
+                console.log('Приложение успешно инициализировано');
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                showMessage('Ошибка загрузки приложения', 'error');
+            }
+        });
+
+        // ===== ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ =====
+        function initTelegramUser() {
+            const user = tg.initDataUnsafe.user;
+            currentUser = {
+                id: user.id.toString(),
+                username: user.username || `user_${user.id}`,
+                firstName: user.first_name,
+                lastName: user.last_name || "",
+                photoUrl: user.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
+            };
+            
+            updateUserUI();
+            
+            // Проверяем админ права
+            if (currentUser.id === APP_CONFIG.ADMIN_ID) {
+                document.getElementById('adminMenuBtn').style.display = 'block';
+            }
+            
+            // Проверяем реферальную ссылку
+            checkReferralLink();
+        }
+
+        function initTestUser() {
+            currentUser = {
+                id: "test_user_" + Date.now(),
+                username: "test_user",
+                firstName: "Тестовый",
+                lastName: "Пользователь",
+                photoUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=test"
+            };
+            
+            updateUserUI();
+            showMessage('Режим разработки активирован', 'info');
+        }
+
+        function updateUserUI() {
+            if (!currentUser) return;
+            
+            document.getElementById('userAvatar').src = currentUser.photoUrl;
+            document.getElementById('username').textContent = currentUser.firstName;
+            document.getElementById('profileAvatar').src = currentUser.photoUrl;
+            document.getElementById('profileName').textContent = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+            document.getElementById('profileUsername').textContent = `@${currentUser.username}`;
+            document.getElementById('profileId').textContent = `ID: ${currentUser.id}`;
+            
+            // Генерация реферальной ссылки
+            const referralUrl = `${APP_CONFIG.BOT_LINK}?startapp=${currentUser.id}`;
+            document.getElementById('referralLink').textContent = referralUrl;
+        }
+
+        function checkReferralLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refID = urlParams.get('ref');
+            if (refID && refID !== currentUser.id) {
+                showMessage('Вы зашли по ссылке от друга', 'success');
+                // Здесь можно добавить логику обработки реферала
+            }
+        }
+
+        // ===== НАВИГАЦИЯ =====
+        function initNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const section = this.getAttribute('data-section');
+                    
+                    // Обновляем активную кнопку
+                    navButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Скрываем все разделы
+                    document.querySelectorAll('.section').forEach(s => {
+                        s.classList.remove('active');
+                        s.style.display = 'none';
+                    });
+                    
+                    // Показываем выбранный раздел
+                    const sectionId = section + 'Section';
+                    const sectionElement = document.getElementById(sectionId);
+                    
+                    if (sectionElement) {
+                        sectionElement.style.display = 'block';
+                        sectionElement.classList.add('active');
+                        
+                        // Если это кликер, обновляем энергию
+                        if (section === 'clicker') {
+                            updateEnergyUI();
+                        }
+                    }
+                });
+            });
+        }
+
+        function showAdminMenu() {
+            document.querySelectorAll('.section').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('adminSection').classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        // ===== КЛИКЕР =====
+        function initClicker() {
+            const clickerButton = document.getElementById('clickerButton');
+            
+            // Локальные переменные для демо
+            let clicks = localStorage.getItem('x_clicks') ? parseInt(localStorage.getItem('x_clicks')) : 0;
+            let balance = localStorage.getItem('x_balance') ? parseInt(localStorage.getItem('x_balance')) : 0;
+            let energy = localStorage.getItem('x_energy') ? parseInt(localStorage.getItem('x_energy')) : APP_CONFIG.DAILY_ENERGY;
+            
+            // Обновляем UI
+            document.getElementById('totalClicks').textContent = clicks;
+            document.getElementById('clickerBalance').textContent = balance + ' X';
+            document.getElementById('balanceAmount').textContent = balance + ' X';
+            document.getElementById('energyText').textContent = `${energy}/${APP_CONFIG.DAILY_ENERGY}`;
+            document.getElementById('energyFill').style.width = `${(energy / APP_CONFIG.DAILY_ENERGY) * 100}%`;
+            
+            // Расчет рублевого эквивалента
+            const rub = (balance * 0.01).toFixed(2);
+            document.getElementById('balanceRub').textContent = `≈ ${rub} ₽`;
+            document.getElementById('clickerBalanceRub').textContent = `≈ ${rub} ₽`;
+            
+            clickerButton.addEventListener('click', function(e) {
+                // Проверяем энергию
+                if (energy <= 0) {
+                    showMessage('Недостаточно энергии!', 'error');
+                    return;
+                }
+                
+                // Обновляем значения
+                clicks++;
+                balance += clickReward;
+                energy--;
+                
+                // Сохраняем в localStorage
+                localStorage.setItem('x_clicks', clicks);
+                localStorage.setItem('x_balance', balance);
+                localStorage.setItem('x_energy', energy);
+                localStorage.setItem('x_last_click_date', new Date().toISOString());
+                
+                // Обновляем UI
+                document.getElementById('totalClicks').textContent = clicks;
+                document.getElementById('dailyClicks').textContent = clicks % 100; // Для демо
+                document.getElementById('clickerBalance').textContent = balance + ' X';
+                document.getElementById('balanceAmount').textContent = balance + ' X';
+                document.getElementById('energyText').textContent = `${energy}/${APP_CONFIG.DAILY_ENERGY}`;
+                document.getElementById('energyFill').style.width = `${(energy / APP_CONFIG.DAILY_ENERGY) * 100}%`;
+                
+                // Расчет рублевого эквивалента
+                const rub = (balance * 0.01).toFixed(2);
+                document.getElementById('balanceRub').textContent = `≈ ${rub} ₽`;
+                document.getElementById('clickerBalanceRub').textContent = `≈ ${rub} ₽`;
+                
+                // Анимации
+                createClickEffect(e);
+                showClickRewardAnimation(e, clickReward);
+                
+                // Сообщения
+                if (clicks % 10 === 0) {
+                    showMessage(`Отлично! Уже ${clicks} кликов! 🎯`, 'success');
+                }
+                
+                if (clicks % 50 === 0) {
+                    showMessage(`Потрясающе! ${clicks} кликов! ⚡`, 'success');
+                }
+            });
+            
+            function createClickEffect(e) {
+                const clickParticles = document.getElementById('clickParticles');
+                const rect = clickParticles.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Создаем 8-10 частиц
+                const particleCount = 8 + Math.floor(Math.random() * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'click-particle';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 80 + Math.random() * 70;
+                    const tx = Math.cos(angle) * distance;
+                    const ty = Math.sin(angle) * distance;
+                    const size = 20 + Math.random() * 20;
+                    
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    const rotation = Math.random() * 360;
+                    particle.style.setProperty('--tx', `${tx}px`);
+                    particle.style.setProperty('--ty', `${ty}px`);
+                    particle.style.left = `${x - size/2}px`;
+                    particle.style.top = `${y - size/2}px`;
+                    particle.style.transform = `rotate(${rotation}deg)`;
+                    
+                    clickParticles.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode === clickParticles) {
+                            particle.remove();
+                        }
+                    }, 1000);
+                }
+            }
+            
+            function showClickRewardAnimation(e, reward) {
+                const rewardElement = document.createElement('div');
+                rewardElement.className = 'click-reward-animation';
+                rewardElement.textContent = `+${reward} X`;
+                
+                const rect = document.getElementById('clickerButton').getBoundingClientRect();
+                rewardElement.style.left = `${e.clientX - rect.left}px`;
+                rewardElement.style.top = `${e.clientY - rect.top}px`;
+                
+                document.getElementById('clickerButton').appendChild(rewardElement);
+                
+                setTimeout(() => {
+                    rewardElement.remove();
+                }, 1000);
+            }
+        }
+
+        function updateEnergyUI() {
+            // В демо-режиме просто показываем сохраненное значение
+            const energy = localStorage.getItem('x_energy') ? 
+                parseInt(localStorage.getItem('x_energy')) : APP_CONFIG.DAILY_ENERGY;
+            
+            document.getElementById('energyText').textContent = `${energy}/${APP_CONFIG.DAILY_ENERGY}`;
+            document.getElementById('energyFill').style.width = `${(energy / APP_CONFIG.DAILY_ENERGY) * 100}%`;
+            
+            // Меняем цвет в зависимости от уровня энергии
+            const energyFill = document.getElementById('energyFill');
+            if (energy < 100) {
+                energyFill.style.background = 'linear-gradient(135deg, #ff6b6b, #ffa726)';
+            } else if (energy < 300) {
+                energyFill.style.background = 'linear-gradient(135deg, #4cc9f0, #2a9d8f)';
+            } else {
+                energyFill.style.background = 'linear-gradient(135deg, #8ac926, #2a9d8f)';
+            }
+        }
+
+        // ===== КАТЕГОРИИ ЗАДАНИЙ =====
+        function initTaskCategories() {
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            
+            categoryButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Убираем активный класс у всех кнопок
+                    categoryButtons.forEach(b => b.classList.remove('active'));
+                    // Добавляем активный класс нажатой кнопке
+                    this.classList.add('active');
+                    
+                    // Загрузка заданий выбранной категории
+                    const category = this.getAttribute('data-category');
+                    loadTasksByCategory(category);
+                });
+            });
+            
+            // Загружаем задания по умолчанию
+            loadTasksByCategory('all');
+        }
+
+        function loadTasksByCategory(category) {
+            const tasksList = document.getElementById('tasksList');
+            
+            if (category === 'all') {
+                // Демо-задания
+                const demoTasks = [
+                    {
+                        id: 1,
+                        name: "Подпишитесь на канал X Project",
+                        description: "Подпишитесь на наш новостной канал и получите 50 X коинов",
+                        price: 50,
+                        category: "subscriptions",
+                        imageUrl: "https://images.unsplash.com/photo-1611605698335-8b1569810432?w=400&h=200&fit=crop"
+                    },
+                    {
+                        id: 2,
+                        name: "Вступите в группу поддержки",
+                        description: "Вступите в нашу группу поддержки и получите 30 X коинов",
+                        price: 30,
+                        category: "subscriptions",
+                        imageUrl: "https://images.unsplash.com/photo-1611605698323-b1e99cfd37ea?w=400&h=200&fit=crop"
+                    },
+                    {
+                        id: 3,
+                        name: "Пригласите 3 друзей",
+                        description: "Пригласите 3 друзей по своей реферальной ссылке",
+                        price: 150,
+                        category: "registrations",
+                        imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=200&fit=crop"
+                    }
+                ];
+                renderTasks(demoTasks);
+            } else {
+                // Фильтруем демо-задания по категории
+                const filteredTasks = [
+                    {
+                        id: 1,
+                        name: `Задание категории "${category}"`,
+                        description: "Пример задания для демонстрации",
+                        price: Math.floor(Math.random() * 100) + 10,
+                        category: category,
+                        imageUrl: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=200&fit=crop"
+                    }
+                ];
+                renderTasks(filteredTasks);
+            }
+        }
+
+        function renderTasks(tasksArray) {
+            const tasksList = document.getElementById('tasksList');
+            
+            if (!tasksArray || tasksArray.length === 0) {
+                tasksList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <div>Нет заданий в этой категории</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            tasksArray.forEach(task => {
+                html += `
+                    <div class="task-card" onclick="openTaskModal(${task.id})">
+                        <div class="task-header">
+                            <img src="${task.imageUrl}" alt="${task.name}" class="task-image">
+                            <div class="task-price">${task.price} X</div>
+                        </div>
+                        <div class="task-content">
+                            <h3 class="task-title">${task.name}</h3>
+                            <p class="task-description">${task.description}</p>
+                            <span class="task-status status-available">Доступно</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            tasksList.innerHTML = html;
+        }
+
+        function openTaskModal(taskId) {
+            // Демо-данные задания
+            currentTask = {
+                id: taskId,
+                name: "Подпишитесь на канал X Project",
+                description: "Подпишитесь на наш новостной канал и получите 50 X коинов. Подписка должна быть активна минимум 3 дня.",
+                price: 50,
+                imageUrl: "https://images.unsplash.com/photo-1611605698335-8b1569810432?w=400&h=200&fit=crop",
+                link: APP_CONFIG.NEWS_LINK
+            };
+            
+            // Обновляем модальное окно
+            document.getElementById('modalTaskImage').src = currentTask.imageUrl;
+            document.getElementById('modalTaskTitle').textContent = currentTask.name;
+            document.getElementById('modalTaskDescription').textContent = currentTask.description;
+            
+            // Показываем первый шаг
+            document.getElementById('taskModalStep1').style.display = 'block';
+            document.getElementById('taskModalStep2').style.display = 'none';
+            
+            // Сбрасываем фото
+            document.getElementById('reportPhoto').value = '';
+            document.getElementById('photoPreview').src = '';
+            document.getElementById('photoPreview').style.display = 'none';
+            reportPhoto = null;
+            
+            // Показываем модальное окно
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.remove('active');
+            currentTask = null;
+            reportPhoto = null;
+        }
+
+        function startTask() {
+            if (!currentTask) return;
+            
+            // Открываем ссылку задания
+            window.open(currentTask.link, '_blank');
+            
+            // Показываем второй шаг
+            document.getElementById('taskModalStep1').style.display = 'none';
+            document.getElementById('taskModalStep2').style.display = 'block';
+            
+            // Настраиваем загрузку фото
+            setupPhotoUpload();
+        }
+
+        function setupPhotoUpload() {
+            const reportPhotoInput = document.getElementById('reportPhoto');
+            const photoPreview = document.getElementById('photoPreview');
+            
+            if (!reportPhotoInput) return;
+            
+            reportPhotoInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        photoPreview.src = e.target.result;
+                        photoPreview.style.display = 'block';
+                        reportPhoto = file;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+        }
+
+        function backToStep1() {
+            document.getElementById('taskModalStep1').style.display = 'block';
+            document.getElementById('taskModalStep2').style.display = 'none';
+        }
+
+        async function submitTaskReport() {
+            if (!currentTask || !currentUser || !reportPhoto) {
+                showMessage('Пожалуйста, загрузите фото отчета', 'error');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitReportBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            try {
+                // Имитация задержки отправки
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Обновляем баланс
+                let balance = localStorage.getItem('x_balance') ? 
+                    parseInt(localStorage.getItem('x_balance')) : 0;
+                balance += currentTask.price;
+                localStorage.setItem('x_balance', balance);
+                
+                // Обновляем статистику
+                let completedTasks = localStorage.getItem('x_completed_tasks') ? 
+                    parseInt(localStorage.getItem('x_completed_tasks')) : 0;
+                completedTasks++;
+                localStorage.setItem('x_completed_tasks', completedTasks);
+                
+                // Обновляем UI
+                document.getElementById('balanceAmount').textContent = balance + ' X';
+                document.getElementById('completedTasks').textContent = completedTasks;
+                document.getElementById('clickerBalance').textContent = balance + ' X';
+                
+                const rub = (balance * 0.01).toFixed(2);
+                document.getElementById('balanceRub').textContent = `≈ ${rub} ₽`;
+                document.getElementById('clickerBalanceRub').textContent = `≈ ${rub} ₽`;
+                
+                // Отправляем уведомление админу
+                if (window.sendTelegramNotification) {
+                    sendTelegramNotification(
+                        APP_CONFIG.ADMIN_ID,
+                        `Новый отчет по заданию!\n\nЗадание: ${currentTask.name}\nПользователь: @${currentUser.username}\nЦена: ${currentTask.price} X`
+                    );
+                }
+                
+                showMessage('Отчет отправлен на проверку! Награда будет зачислена после одобрения.', 'success');
+                closeTaskModal();
+                
+                // Проверяем доступность вывода
+                checkWithdrawButton();
+                
+            } catch (error) {
+                console.error('Ошибка отправки отчета:', error);
+                showMessage('❌ Ошибка отправки отчета', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        // ===== ВЫВОД СРЕДСТВ =====
+        function checkWithdrawButton() {
+            const withdrawButton = document.getElementById('withdrawButton');
+            const withdrawMessage = document.getElementById('withdrawMessage');
+            
+            if (!withdrawButton || !withdrawMessage) return;
+            
+            const completedTasks = localStorage.getItem('x_completed_tasks') ? 
+                parseInt(localStorage.getItem('x_completed_tasks')) : 0;
+            const balance = localStorage.getItem('x_balance') ? 
+                parseInt(localStorage.getItem('x_balance')) : 0;
+            
+            if (completedTasks >= 5 && balance >= APP_CONFIG.MIN_WITHDRAW) {
+                withdrawButton.innerHTML = '<i class="fas fa-credit-card"></i> Вывести средства';
+                withdrawButton.classList.remove('btn-disabled');
+                withdrawButton.onclick = openWithdrawModal;
+                withdrawMessage.style.display = 'none';
+            } else {
+                withdrawButton.innerHTML = '<i class="fas fa-lock"></i> Выполните 5 заданий';
+                withdrawButton.classList.add('btn-disabled');
+                withdrawButton.onclick = checkWithdrawAvailability;
+                withdrawMessage.style.display = 'block';
+            }
+        }
+
+        function checkWithdrawAvailability() {
+            const completedTasks = localStorage.getItem('x_completed_tasks') ? 
+                parseInt(localStorage.getItem('x_completed_tasks')) : 0;
+            const balance = localStorage.getItem('x_balance') ? 
+                parseInt(localStorage.getItem('x_balance')) : 0;
+            
+            if (completedTasks < 5) {
+                showMessage('Выполните 5 заданий чтобы вывести средства', 'error');
+                return;
+            }
+            
+            if (balance < APP_CONFIG.MIN_WITHDRAW) {
+                showMessage(`Минимальная сумма для вывода: ${APP_CONFIG.MIN_WITHDRAW} X (50 рублей)`, 'error');
+                return;
+            }
+            
+            openWithdrawModal();
+        }
+
+        function openWithdrawModal() {
+            const balance = localStorage.getItem('x_balance') ? 
+                parseInt(localStorage.getItem('x_balance')) : 0;
+            
+            if (balance <= APP_CONFIG.MIN_WITHDRAW) {
+                showMessage(`Минимальная сумма для вывода: ${APP_CONFIG.MIN_WITHDRAW} X (50 рублей)`, 'error');
+                return;
+            }
+            
+            const withdrawAmount = document.getElementById('withdrawAmount');
+            if (withdrawAmount) {
+                withdrawAmount.value = Math.min(balance, APP_CONFIG.MIN_WITHDRAW);
+                updateWithdrawRub();
+            }
+            
+            document.getElementById('withdrawModal').classList.add('active');
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdrawModal').classList.remove('active');
+        }
+
+        function updateWithdrawRub() {
+            const amountInput = document.getElementById('withdrawAmount');
+            const rubAmount = document.getElementById('withdrawRubAmount');
+            
+            if (!amountInput || !rubAmount) return;
+            
+            const amount = parseInt(amountInput.value) || 0;
+            const rub = (amount * 0.01).toFixed(2);
+            rubAmount.textContent = rub;
+        }
+
+        async function submitWithdrawRequest() {
+            if (!currentUser) return;
+            
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const cardNumber = document.getElementById('withdrawCard').value.trim();
+            const balance = localStorage.getItem('x_balance') ? 
+                parseInt(localStorage.getItem('x_balance')) : 0;
+            
+            // Валидация
+            if (!amount || amount < APP_CONFIG.MIN_WITHDRAW) {
+                showMessage(`Минимальная сумма: ${APP_CONFIG.MIN_WITHDRAW} X`, 'error');
+                return;
+            }
+            
+            if (amount > balance) {
+                showMessage('Недостаточно средств', 'error');
+                return;
+            }
+            
+            if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
+                showMessage('Введите корректный номер карты', 'error');
+                return;
+            }
+            
+            try {
+                // Обновляем баланс
+                const newBalance = balance - amount;
+                localStorage.setItem('x_balance', newBalance);
+                
+                // Обновляем UI
+                document.getElementById('balanceAmount').textContent = newBalance + ' X';
+                document.getElementById('clickerBalance').textContent = newBalance + ' X';
+                
+                const rub = (newBalance * 0.01).toFixed(2);
+                document.getElementById('balanceRub').textContent = `≈ ${rub} ₽`;
+                document.getElementById('clickerBalanceRub').textContent = `≈ ${rub} ₽`;
+                
+                // Отправляем уведомление админу
+                if (window.sendTelegramNotification) {
+                    sendTelegramNotification(
+                        APP_CONFIG.ADMIN_ID,
+                        `Новая заявка на вывод!\n\nПользователь: @${currentUser.username}\nСумма: ${amount} X (${amount * 0.01} руб)\nКарта: ****${cardNumber.slice(-4)}`
+                    );
+                }
+                
+                closeWithdrawModal();
+                showMessage('Заявка на вывод отправлена! Ожидайте выплаты в течение 24 часов.', 'success');
+                
+                // Обновляем кнопку вывода
+                checkWithdrawButton();
+                
+            } catch (error) {
+                console.error('Ошибка отправки заявки:', error);
+                showMessage('❌ Ошибка отправки заявки', 'error');
+            }
+        }
+
+        // ===== СООБЩЕНИЯ И УВЕДОМЛЕНИЯ =====
+        function showMessage(text, type = 'info') {
+            const messageContainer = document.getElementById('messageContainer');
+            
+            if (!messageContainer) {
+                // Создаем контейнер если его нет
+                const container = document.createElement('div');
+                container.id = 'messageContainer';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    max-width: 300px;
+                `;
+                document.body.appendChild(container);
+            }
+            
+            const message = document.createElement('div');
+            message.className = `message ${type} active`;
+            message.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 20px;">
+                        ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
+                    </div>
+                    <div style="flex: 1;">${text}</div>
+                </div>
+            `;
+            
+            messageContainer.appendChild(message);
+            
+            // Удаляем через 3 секунды
+            setTimeout(() => {
+                message.classList.remove('active');
+                setTimeout(() => message.remove(), 300);
+            }, 3000);
+        }
+
+        function copyReferralLink() {
+            const referralLink = document.getElementById('referralLink').textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(referralLink).then(() => {
+                    showMessage('Ссылка скопирована в буфер обмена!', 'success');
+                }).catch(err => {
+                    fallbackCopy(referralLink);
+                });
+            } else {
+                fallbackCopy(referralLink);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showMessage('Ссылка скопирована в буфер обмена!', 'success');
+            } catch (err) {
+                showMessage('Не удалось скопировать ссылку', 'error');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // ===== ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ =====
+        function loadUserData() {
+            // Загружаем данные из localStorage
+            const balance = localStorage.getItem('x_balance') ? 
+                parseInt(localStorage.getItem('x_balance')) : 0;
+            const clicks = localStorage.getItem('x_clicks') ? 
+                parseInt(localStorage.getItem('x_clicks')) : 0;
+            const completedTasks = localStorage.getItem('x_completed_tasks') ? 
+                parseInt(localStorage.getItem('x_completed_tasks')) : 0;
+            const referralsCount = localStorage.getItem('x_referrals_count') ? 
+                parseInt(localStorage.getItem('x_referrals_count')) : 0;
+            
+            // Обновляем UI
+            document.getElementById('balanceAmount').textContent = balance + ' X';
+            document.getElementById('clickerBalance').textContent = balance + ' X';
+            document.getElementById('totalClicks').textContent = clicks;
+            document.getElementById('totalClicksStat').textContent = clicks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('referralsCount').textContent = referralsCount;
+            document.getElementById('referralsCountStat').textContent = referralsCount;
+            document.getElementById('referralsEarned').textContent = (referralsCount * referralReward) + ' X';
+            document.getElementById('totalEarned').textContent = (balance + (referralsCount * referralReward)) + ' X';
+            
+            // Расчет рублевого эквивалента
+            const rub = (balance * 0.01).toFixed(2);
+            document.getElementById('balanceRub').textContent = `≈ ${rub} ₽`;
+            document.getElementById('clickerBalanceRub').textContent = `≈ ${rub} ₽`;
+            document.getElementById('referralBalance').textContent = (referralsCount * referralReward) + ' X';
+            document.getElementById('referralBalanceRub').textContent = `≈ ${(referralsCount * referralReward * 0.01).toFixed(2)} ₽`;
+            
+            // Проверяем кнопку вывода
+            checkWithdrawButton();
+            
+            // Загружаем демо-рефералов
+            loadDemoReferrals();
+        }
+
+        function loadDemoReferrals() {
+            const referralsList = document.getElementById('referralsList');
+            
+            // Демо-рефералы
+            const demoReferrals = [
+                { id: 1, name: "Алексей", username: "alexey123", joinDate: "2024-01-15" },
+                { id: 2, name: "Мария", username: "maria_pro", joinDate: "2024-01-20" },
+                { id: 3, name: "Дмитрий", username: "dmitry_work", joinDate: "2024-02-01" }
+            ];
+            
+            let html = '';
+            demoReferrals.forEach((ref, index) => {
+                html += `
+                    <div class="referral-item">
+                        <div class="referral-avatar">
+                            ${index + 1}
+                        </div>
+                        <div class="referral-info">
+                            <div class="referral-name">${ref.name}</div>
+                            <div class="referral-id">@${ref.username} • Зарегистрирован: ${ref.joinDate}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            referralsList.innerHTML = html;
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ =====
+        function initEventListeners() {
+            // Поле суммы вывода
+            const withdrawAmount = document.getElementById('withdrawAmount');
+            if (withdrawAmount) {
+                withdrawAmount.addEventListener('input', updateWithdrawRub);
+            }
+        }
+
+        // ===== ЭКСПОРТ ФУНКЦИЙ ДЛЯ ГЛОБАЛЬНОГО ДОСТУПА =====
+        window.copyReferralLink = copyReferralLink;
+        window.checkWithdrawAvailability = checkWithdrawAvailability;
+        window.openTaskModal = openTaskModal;
+        window.closeTaskModal = closeTaskModal;
+        window.startTask = startTask;
+        window.backToStep1 = backToStep1;
+        window.submitTaskReport = submitTaskReport;
+        window.openWithdrawModal = openWithdrawModal;
+        window.closeWithdrawModal = closeWithdrawModal;
+        window.updateWithdrawRub = updateWithdrawRub;
+        window.submitWithdrawRequest = submitWithdrawRequest;
+        window.showAdminMenu = showAdminMenu;
+        window.showMessage = showMessage;
+
+        console.log('X Project полностью загружен и готов к работе!');
+    </script>
+</body>
+</html>
