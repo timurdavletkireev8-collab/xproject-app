@@ -1,5 +1,4 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 const gamesData = [
@@ -8,45 +7,27 @@ const gamesData = [
   { id: '3', title: 'Trivia Master' },
 ];
 
-const Games = ({ navigation }) => {
+export default function Games() {
   const { isDark } = useTheme();
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.item, { backgroundColor: isDark ? '#1e1e1e' : '#f2f2f2' }]}
-      onPress={() => navigation.navigate('GameDetails', { gameId: item.id })}
-    >
-      <Text style={{ color: isDark ? '#fff' : '#000', fontSize: 18 }}>{item.title}</Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#fff' }]}>
-      <Text style={[styles.title, { color: isDark ? '#fff' : '#000' }]}>Games</Text>
-      <FlatList
-        data={gamesData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-      />
-    </View>
+    <div style={{ backgroundColor: isDark ? '#121212' : '#fff', minHeight: '100vh', padding: 20 }}>
+      <h1 style={{ color: isDark ? '#fff' : '#000' }}>Games</h1>
+      {gamesData.map(game => (
+        <div
+          key={game.id}
+          style={{
+            padding: 15,
+            borderRadius: 10,
+            marginBottom: 15,
+            backgroundColor: isDark ? '#1e1e1e' : '#f2f2f2',
+            cursor: 'pointer'
+          }}
+          onClick={() => alert(`Open game ${game.title}`)}
+        >
+          <span style={{ color: isDark ? '#fff' : '#000', fontSize: 18 }}>{game.title}</span>
+        </div>
+      ))}
+    </div>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20
-  },
-  item: {
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 15
-  }
-});
-
-export default Games;
+}
