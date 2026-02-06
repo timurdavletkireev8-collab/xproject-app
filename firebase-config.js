@@ -17,7 +17,7 @@ const storage = firebase.storage();
 const messaging = firebase.messaging.isSupported() ? firebase.messaging() : null;
 
 // VAPID key для Push-уведомлений (получите в Firebase Console -> Cloud Messaging)
-const VAPID_KEY = "ВАШ_VAPID_KEY_ЗДЕСЬ";
+const VAPID_KEY = "BMCjgejbqUgF9NbS9Am_0fmyhSgpcHrLvWAvD68E3GCWeg0kJcEkHU8zcGNTs45yKZrkENh3nnKbY0JQnsAMz0Q";
 
 // Настройка уведомлений
 if (messaging) {
