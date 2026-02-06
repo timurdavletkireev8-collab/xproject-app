@@ -2,7 +2,7 @@
 
 const NOTIFICATIONS_CONFIG = {
     ENABLED: false, // Поставьте true когда настроите бота
-    BOT_TOKEN: 'YOUR_BOT_TOKEN_HERE',
+    BOT_TOKEN: '8493457836:AAGNrOGcaUcvIvXY6vi-SQ6vEcHsyKVWRbc',
     ADMIN_ID: '7020322752'
 };
 
