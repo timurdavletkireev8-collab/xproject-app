@@ -1,0 +1,15 @@
+{
+  "name": "X Project",
+  "short_name": "XProject",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a192f",
+  "theme_color": "#4cc9f0",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
